@@ -17,10 +17,20 @@ import sys
 
 def grabScreenshotAndAdURLs(publisherURL):
 	browser.get(publisherURL)
-#	print(browser.page_source)
 
 	try:
+	#	print(browser.page_source)
 
+		pageWidth  = browser.execute_script("return Math.max(document.body.scrollWidth, document.body.offsetWidth, document.documentElement.clientWidth, document.documentElement.scrollWidth, document.documentElement.offsetWidth);")
+		pageHeight = browser.execute_script("return Math.max(document.body.scrollHeight, document.body.offsetHeight, document.documentElement.clientHeight, document.documentElement.scrollHeight, document.documentElement.offsetHeight);")
+		browser.set_window_size(pageWidth + 100, pageHeight + 100)
+		browser.get_screenshot_as_file('publisherScreenshot.png') 
+
+		# Get the actual page dimensions using javascript
+		#
+
+#<span class="static-text top-right"></span>
+#		//*[@id="internal_trc_"]/div[1]/a[1]/span/span[2]
 
 	except:
 		print("Unexpected error:", sys.exc_info()[0])
@@ -29,7 +39,7 @@ def grabScreenshotAndAdURLs(publisherURL):
 
 	else:
 
-# Write data eg to CSV
+		# Write data eg to CSV
 		return True
 
 
@@ -43,7 +53,7 @@ browser = webdriver.Chrome(executable_path = path_to_chromedriver)
 
 publisherURL = "http://www.breitbart.com/"
 
-for i in range(0,2):
+for i in range(0,1):
 #latlongListFile = open('latlongs.txt')
 #latlongList = latlongListFile.read().splitlines()
 	grabScreenshotAndAdURLs(publisherURL)
