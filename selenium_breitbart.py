@@ -1,7 +1,9 @@
-# This was some scraping code I wrote sometime ago to scrape with Selenium 
-# This needs to be readapted for DefundBreitbart
-# Selenium for Mac driver at
-# https://chromedriver.storage.googleapis.com/index.html?path=2.26/
+# Download Selenium webdriver (Chrome for MAC) - https://chromedriver.storage.googleapis.com/index.html?path=2.26/
+# http://seleniumhq.github.io/selenium/docs/api/py/index.html
+
+# selenium setup  
+# http://seleniumhq.github.io/selenium/docs/api/py/index.html
+
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -13,61 +15,41 @@ import random
 import csv
 import sys
 
-def getPropertyEstimate(url):
-	print("url = ")
-	print(url)
-	browser.get(url)
+def grabScreenshotAndAdURLs(publisherURL):
+	browser.get(publisherURL)
+#	print(browser.page_source)
 
 	try:
-		element = WebDriverWait(browser, 20).until(EC.element_to_be_clickable((By.XPATH, '//*[@id="UserJumpButton1Text"]/img')))
-		txtStreetAddress = browser.find_element_by_xpath('//*[@id="plcMain_rptrProperties_ctl01_Address"]/a').get_attribute('title')
-		txtStreetAddress = txtStreetAddress[23:]
-		print("txtStreetAddress = ")
-		print(txtStreetAddress)
-		tdOrigValue = browser.find_element_by_xpath('//*[@id="tdOrigValue"]').text.strip()
-		lblValue = browser.find_element_by_xpath('//*[@id="lblValue"]').text.strip()		
-		lastSoldDate = browser.find_element_by_xpath('//*[@id="plcMain_rptrProperties_ctl01_SoldDate"]').text.strip()
-		lastSoldPrice = browser.find_element_by_xpath('//*[@id="tdSalePriceVal"]').text.strip()
-		propertyType = browser.find_element_by_xpath('//*[@id="plcMain_rptrProperties_ctl01_PropertyType"]').text.strip()
-		yearBuilt = browser.find_element_by_xpath('//*[@id="plcMain_rptrProperties_ctl01_YearBuilt"]').text.strip()
-		livingSquareFeet = browser.find_element_by_xpath('//*[@id="plcMain_rptrProperties_ctl01_LivingSquareFeet"]').text.strip()
-		totalSquareFeet = browser.find_element_by_xpath('//*[@id="plcMain_rptrProperties_ctl01_TotalSquareFeet"]').text.strip()
-		latlong = browser.find_element_by_xpath('//*[@id="plcMain_rptrProperties_ctl01_Address"]/a').get_attribute('onclick')
-		latlong = latlong[21:-16]
-		pageContentElement = browser.find_element_by_xpath('//*[@id="divContent01"]')
-		pageContentHTML = pageContentElement.get_attribute('innerHTML')
+
 
 	except:
 		print("Unexpected error:", sys.exc_info()[0])
-		print(url +' not loaded successfully.')
+		print(publisherURL +' not loaded successfully.')
 		return False
 
 	else:
-		with open(txtStreetAddress+'.html', 'a') as htmlSnippetFile:
-			htmlSnippetFile.write(pageContentHTML.encode('utf8'))
-		with open('output.csv', 'a') as csvFile:
-			myWriter = csv.writer(csvFile)
-			data = [url, txtStreetAddress, tdOrigValue, lblValue, lastSoldDate, lastSoldPrice, propertyType, yearBuilt, livingSquareFeet, totalSquareFeet, latlong]
-			print(data)
-			myWriter.writerow(data)
+
+# Write data eg to CSV
 		return True
+
 
 
 ##############
 ## starts here
 ##############
 
-path_to_chromedriver = '/Users/pli/Desktop/selenium_scrape/chromedriver' # change path as needed
+path_to_chromedriver = '/Users/pli/Development/defund-breitbart/chromedriver' # change path as needed
 browser = webdriver.Chrome(executable_path = path_to_chromedriver)
 
+publisherURL = "http://www.breitbart.com/"
 
-propertyListFile = open('propertyURLs.txt')
-propertyList = propertyListFile.read().splitlines()
-for propertyURL in propertyList:
-	getPropertyEstimate(propertyURL)
-	print('finished one!')
-	seconds = 3 + (random.random() * 3)
+for i in range(0,2):
+#latlongListFile = open('latlongs.txt')
+#latlongList = latlongListFile.read().splitlines()
+	grabScreenshotAndAdURLs(publisherURL)
+#	print('finished one!')
+	seconds = .1 + (random.random() * .1)
 	time.sleep(seconds)
 
-print('done!')
+
 # browser.quit()
