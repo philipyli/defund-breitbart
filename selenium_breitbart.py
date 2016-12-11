@@ -90,11 +90,6 @@ def grabScreenshotAndAdURLs(publisherURL):
 
 		banner_height = viewport_height / 4
 
-		#pageWidth  = browser.execute_script("return Math.max(document.body.scrollWidth, document.body.offsetWidth, document.documentElement.clientWidth, document.documentElement.scrollWidth, document.documentElement.offsetWidth);")
-		#pageHeight = browser.execute_script("return Math.max(document.body.scrollHeight, document.body.offsetHeight, document.documentElement.clientHeight, document.documentElement.scrollHeight, document.documentElement.offsetHeight);")
-		#browser.set_window_size(pageWidth + 100, pageHeight + 100)
-		#browser.get_screenshot_as_file('screenshot.png')
-		print("start full screenshot")
 		fullpage_screenshot(browser, 'screenshot.png')
 		print("finish full screenshot")
 		# get divs potentially containing iframe
@@ -106,13 +101,6 @@ def grabScreenshotAndAdURLs(publisherURL):
 			#div_elem.find_element_by_xpath('//div[contains(@id, "google_ads_iframe")]')
 			location = div_elem.location
 
-			# get encapsulated frame and switch to it so we can get its size
-			#frames = div_elem frames = browser.find_elements_by_css_selector("iframe[title='3rd party ad content']")
-			#browser.switch_to_frame(frames[0])
-			#xpath = '//*[@id="aw0"]/img'
-			#frame_elem = browser.find_element_by_xpath(xpath)
-			#frame_size = frame_elem.size
-			#browser.switch_to_default_content()
 			frame_size = div_elem.size
 
 			#open screenshot and get size
@@ -137,9 +125,6 @@ def grabScreenshotAndAdURLs(publisherURL):
 		# Get the actual page dimensions using javascript
 		#
 
-#<span class="static-text top-right"></span>
-#		//*[@id="internal_trc_"]/div[1]/a[1]/span/span[2]
-
 	except:
 		print("Unexpected error:", sys.exc_info()[0])
 		print(publisherURL +' not loaded successfully.')
@@ -156,10 +141,7 @@ def grabScreenshotAndAdURLs(publisherURL):
 ## starts here
 ##############
 
-path_to_chromedriver = '/Users/yupaul1/Downloads/chromedriver' # change path as needed
-#options = webdriver.ChromeOptions()
-#options.add_argument("--start-maximized")
-#driver = webdriver.Chrome()
+path_to_chromedriver = os.path.dirname(os.path.abspath('__file__'))+ '/chromedriver' # change path as needed
 browser = webdriver.Chrome(executable_path = path_to_chromedriver)
 
 publisherURL = "http://www.breitbart.com/"
