@@ -1,7 +1,7 @@
 # Download Selenium webdriver (Chrome for MAC) - https://chromedriver.storage.googleapis.com/index.html?path=2.26/
 # http://seleniumhq.github.io/selenium/docs/api/py/index.html
 
-# selenium setup  
+# selenium setup
 # http://seleniumhq.github.io/selenium/docs/api/py/index.html
 
 
@@ -10,21 +10,129 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
+from PIL import Image
 import time
 import random
 import csv
 import sys
+import os
+def fullpage_screenshot(driver, file):
+        print("Starting chrome full page screenshot workaround ...")
+
+        total_width = driver.execute_script("return document.body.offsetWidth")
+        total_height = driver.execute_script("return document.body.parentNode.scrollHeight")
+        viewport_width = driver.execute_script("return document.body.clientWidth")
+        viewport_height = driver.execute_script("return window.innerHeight")
+        print("Total: ({0}, {1}), Viewport: ({2},{3})".format(total_width, total_height,viewport_width,viewport_height))
+        rectangles = []
+
+
+        i = 0
+        while i < total_height:
+            ii = 0
+            top_height = i + viewport_height
+
+            if top_height > total_height:
+                top_height = total_height
+
+            while ii < total_width:
+                top_width = ii + viewport_width
+
+                if top_width > total_width:
+                    top_width = total_width
+
+                print("Appending rectangle ({0},{1},{2},{3})".format(ii, i, top_width, top_height))
+                rectangles.append((ii, i, top_width,top_height))
+
+                ii = ii + viewport_width
+
+            i = i + viewport_height
+
+        stitched_image = Image.new('RGB', (total_width, total_height))
+        previous = None
+        part = 0
+
+        for rectangle in rectangles:
+            if not previous is None:
+                driver.execute_script("window.scrollTo({0}, {1})".format(500, rectangle[1]))
+                print("Scrolled To ({0},{1})".format(500, rectangle[1]))
+                #time.sleep(0.4)
+
+            file_name = "part_{0}.png".format(part)
+            print("Capturing {0} ...".format(file_name))
+
+            driver.get_screenshot_as_file(file_name)
+            screenshot = Image.open(file_name)
+
+            if rectangle[1] + viewport_height > total_height:
+                offset = (rectangle[0], total_height - viewport_height)
+            else:
+                offset = (rectangle[0], rectangle[1])
+
+            print("Adding to stitched image with offset ({0}, {1})".format(offset[0],offset[1]))
+            stitched_image.paste(screenshot, offset)
+
+            del screenshot
+            os.remove(file_name)
+            part = part + 1
+            previous = rectangle
+
+        stitched_image.save(file)
+        print("Finishing chrome full page screenshot workaround...")
+        return True
 
 def grabScreenshotAndAdURLs(publisherURL):
-	browser.get(publisherURL)
 
 	try:
-	#	print(browser.page_source)
+		print("start try")
+		#	print(browser.page_source)
+		viewport_height = browser.execute_script("return window.innerHeight")
 
-		pageWidth  = browser.execute_script("return Math.max(document.body.scrollWidth, document.body.offsetWidth, document.documentElement.clientWidth, document.documentElement.scrollWidth, document.documentElement.offsetWidth);")
-		pageHeight = browser.execute_script("return Math.max(document.body.scrollHeight, document.body.offsetHeight, document.documentElement.clientHeight, document.documentElement.scrollHeight, document.documentElement.offsetHeight);")
-		browser.set_window_size(pageWidth + 100, pageHeight + 100)
-		browser.get_screenshot_as_file('publisherScreenshot.png') 
+		banner_height = viewport_height / 4
+
+		#pageWidth  = browser.execute_script("return Math.max(document.body.scrollWidth, document.body.offsetWidth, document.documentElement.clientWidth, document.documentElement.scrollWidth, document.documentElement.offsetWidth);")
+		#pageHeight = browser.execute_script("return Math.max(document.body.scrollHeight, document.body.offsetHeight, document.documentElement.clientHeight, document.documentElement.scrollHeight, document.documentElement.offsetHeight);")
+		#browser.set_window_size(pageWidth + 100, pageHeight + 100)
+		#browser.get_screenshot_as_file('screenshot.png')
+		print("start full screenshot")
+		fullpage_screenshot(browser, 'screenshot.png')
+		print("finish full screenshot")
+		# get divs potentially containing iframe
+		#div_elems = browser.find_elements_by_xpath('//div[contains(@class, "Hmobi")]')
+
+		div_elems = browser.find_elements_by_xpath('//div[contains(@id, "google_ads_iframe")]')
+		for index, div_elem in enumerate(div_elems):
+			# get the most nested div that contains iframe, and save its location
+			#div_elem.find_element_by_xpath('//div[contains(@id, "google_ads_iframe")]')
+			location = div_elem.location
+
+			# get encapsulated frame and switch to it so we can get its size
+			#frames = div_elem frames = browser.find_elements_by_css_selector("iframe[title='3rd party ad content']")
+			#browser.switch_to_frame(frames[0])
+			#xpath = '//*[@id="aw0"]/img'
+			#frame_elem = browser.find_element_by_xpath(xpath)
+			#frame_size = frame_elem.size
+			#browser.switch_to_default_content()
+			frame_size = div_elem.size
+
+			#open screenshot and get size
+			im = Image.open('screenshot' + '.png') # uses PIL library to open image in memory
+			image_width, image_height = im.size
+			if location['y'] < banner_height: # banner image
+				# get parameters for cropping image
+				left = max(0, location['x'] - 200)
+				right =  min(image_width, location['x'] + frame_size['width'] + 200)
+				top = 0
+				bottom = location['y'] + frame_size['height'] + 100
+			else: # body page image
+				left = 0
+				right = image_width
+				top = max(0, location['y'] - 10)
+				bottom = min(image_height, location['y'] + frame_size['height'] + 10)
+			# crop image
+			im = im.crop((left, top, right, bottom)) # defines crop points
+			im.save('pic' + str(index) + '.png')
+
 
 		# Get the actual page dimensions using javascript
 		#
@@ -48,10 +156,14 @@ def grabScreenshotAndAdURLs(publisherURL):
 ## starts here
 ##############
 
-path_to_chromedriver = '/Users/pli/Development/defund-breitbart/chromedriver' # change path as needed
+path_to_chromedriver = '/Users/yupaul1/Downloads/chromedriver' # change path as needed
+#options = webdriver.ChromeOptions()
+#options.add_argument("--start-maximized")
+#driver = webdriver.Chrome()
 browser = webdriver.Chrome(executable_path = path_to_chromedriver)
 
 publisherURL = "http://www.breitbart.com/"
+browser.get(publisherURL)
 
 for i in range(0,1):
 #latlongListFile = open('latlongs.txt')
@@ -63,3 +175,4 @@ for i in range(0,1):
 
 
 # browser.quit()
+
