@@ -16,6 +16,9 @@ import random
 import csv
 import sys
 import os
+import base64
+import csv
+
 def fullpage_screenshot(driver, file):
         print("Starting chrome full page screenshot workaround ...")
 
@@ -94,12 +97,14 @@ def grabScreenshotAndAdURLs(publisherURL):
 		print("finish full screenshot")
 		# get divs potentially containing iframe
 		#div_elems = browser.find_elements_by_xpath('//div[contains(@class, "Hmobi")]')
-
+		image_names = []
+		all_links = []
 		div_elems = browser.find_elements_by_xpath('//div[contains(@id, "google_ads_iframe")]')
 		for index, div_elem in enumerate(div_elems):
 			# get the most nested div that contains iframe, and save its location
 			#div_elem.find_element_by_xpath('//div[contains(@id, "google_ads_iframe")]')
 			location = div_elem.location
+
 
 			frame_size = div_elem.size
 
@@ -119,14 +124,35 @@ def grabScreenshotAndAdURLs(publisherURL):
 				bottom = min(image_height, location['y'] + frame_size['height'] + 10)
 			# crop image
 			im = im.crop((left, top, right, bottom)) # defines crop points
-			im.save('pic' + str(index) + '.png')
+			image_name = 'pic' + str(index) + '.png'
+			im.save(image_name)
+			image_names.append(image_name)
+			#open new picture, and base64 encode it into a string
+			print("finish creating image: " + image_name)
+			# get content on corresponding iframe
+			googleframe = div_elem.find_element_by_tag_name('iframe')
+			browser.switch_to.frame(googleframe)
+			links = browser.find_elements_by_tag_name('a')
+			linkref = [l.get_attribute('data-original-click-url') for l in links if l.get_attribute('data-original-click-url') is not None]
+			all_links.append(linkref)
+			browser.switch_to_default_content()
+		print("construct csv")
+		# write links and image files into 2-column csv called eggs.csv
+		with open('eggs.csv', 'w', newline='') as csvfile:
+			spamwriter = csv.writer(csvfile, delimiter=',',
+							quotechar='"', quoting=csv.QUOTE_ALL)
+			for i in range(0,len(image_names)):
+				print("making row" + str(i))
+				with open(image_names[i], "rb") as image_file:
+					encoded_string = base64.b64encode(image_file.read())
+				if len(all_links[i]) == 0:
+					continue
+				spamwriter.writerow([all_links[i][0], encoded_string])
 
 
-		# Get the actual page dimensions using javascript
-		#
-
-	except:
+	except Exception as e:
 		print("Unexpected error:", sys.exc_info()[0])
+		print(str(e))
 		print(publisherURL +' not loaded successfully.')
 		return False
 
